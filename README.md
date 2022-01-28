@@ -1,0 +1,1 @@
+*golang environment variables encapsulation*
