@@ -1,6 +1,9 @@
 package genvar
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 // Accessor encapsulates functions from the os package pertaining to environment
 // variables.
@@ -17,6 +20,23 @@ type Accessor interface {
 // Update updates Accessor with an existing map
 func Update(a Accessor, m map[string]string) (err error) {
 	for k, v := range m {
+		err = a.Setenv(k, v)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func UpdateFromEnviron(a Accessor, m []string) (err error) {
+	for _, v := range m {
+		sp := strings.SplitN(v, "=", 2)
+		k := sp[0]
+		if len(sp) > 1 {
+			v = sp[1]
+		} else {
+			v = ""
+		}
 		err = a.Setenv(k, v)
 		if err != nil {
 			return
