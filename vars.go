@@ -5,20 +5,26 @@ import (
 	"strings"
 )
 
-// Accessor encapsulates functions from the os package pertaining to environment
-// variables.
-type Accessor interface {
+// EnvRO encapsulates read only functions from the os package pertaining to
+// environment variables.
+type EnvRO interface {
 	Environ() []string
-	Setenv(key, value string) error
+	ExpandEnv(s string) string
 	Getenv(key string) string
 	LookupEnv(key string) (string, bool)
-	ClearEnv()
-	Unsetenv(key string) error
-	ExpandEnv(s string) string
 }
 
-// Update updates Accessor with an existing map
-func Update(a Accessor, m map[string]string) (err error) {
+// Env encapsulates functions from the os package pertaining to environment
+// variables.
+type Env interface {
+	EnvRO
+	ClearEnv()
+	Setenv(key, value string) error
+	Unsetenv(key string) error
+}
+
+// Update updates Env with an existing map
+func Update(a Env, m map[string]string) (err error) {
 	for k, v := range m {
 		err = a.Setenv(k, v)
 		if err != nil {
@@ -28,7 +34,8 @@ func Update(a Accessor, m map[string]string) (err error) {
 	return
 }
 
-func UpdateFromEnviron(a Accessor, m []string) (err error) {
+// UpdateFromEnviron updates Env with string slice (a la Environ)
+func UpdateFromEnviron(a Env, m []string) (err error) {
 	for _, v := range m {
 		sp := strings.SplitN(v, "=", 2)
 		k := sp[0]
@@ -57,7 +64,7 @@ func (o osVars) Unsetenv(key string) error           { return os.Unsetenv(key) }
 func (o osVars) ExpandEnv(s string) string           { return os.ExpandEnv(s) }
 
 // NewOs returns a VarUser that wraps the os package functions
-func NewOs() Accessor {
+func NewOs() Env {
 	return &osVars{}
 }
 
@@ -97,7 +104,7 @@ func (m mapVars) ExpandEnv(s string) string {
 }
 
 // NewMap returns a VarUser that uses an in-memory map
-func NewMap() Accessor {
+func NewMap() Env {
 	return mapVars{
 		m: make(map[string]string),
 	}
